@@ -1,7 +1,7 @@
 import { hardline, indent, join } from "../../document/index.js";
 import {
   escapeTemplateCharacters,
-  printTemplateExpressions,
+  printEmbeddedTemplateExpressions,
 } from "../print/template-literal.js";
 import { hasLanguageComment } from "./utilities.js";
 
@@ -10,7 +10,7 @@ async function printEmbedGraphQL(textToDoc, print, path, options) {
 
   const numQuasis = node.quasis.length;
 
-  const expressionDocs = printTemplateExpressions(path, options, print);
+  const expressionDocs = printEmbeddedTemplateExpressions(path, options, print);
   const parts = [];
 
   for (let i = 0; i < numQuasis; i++) {
@@ -21,6 +21,11 @@ async function printEmbedGraphQL(textToDoc, print, path, options) {
 
     const lines = text.split("\n");
     const numLines = lines.length;
+
+    // Bail out if an interpolation occurs within a comment.
+    if (!isLast && /#[^\n\r]*$/.test(lines[numLines - 1])) {
+      return null;
+    }
 
     const startsWithBlankLine =
       numLines > 2 && lines[0].trim() === "" && lines[1].trim() === "";
@@ -33,12 +38,7 @@ async function printEmbedGraphQL(textToDoc, print, path, options) {
       /^\s*(?:#[^\n\r]*)?$/.test(line),
     );
 
-    // Bail out if an interpolation occurs within a comment.
-    if (!isLast && /#[^\n\r]*$/.test(lines[numLines - 1])) {
-      return null;
-    }
-
-    let doc = null;
+    let doc;
 
     if (commentsAndWhitespaceOnly) {
       doc = printGraphqlComments(lines);

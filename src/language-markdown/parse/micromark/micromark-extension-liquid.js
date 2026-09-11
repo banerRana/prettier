@@ -1,4 +1,4 @@
-import { markdownLineEnding } from "micromark-util-character";
+import { markdownLineEnding, markdownSpace } from "micromark-util-character";
 import { codes, types } from "micromark-util-symbol";
 
 /**
@@ -7,6 +7,7 @@ import { codes, types } from "micromark-util-symbol";
  * @typedef {import('mdast-util-from-markdown').CompileContext} CompileContext
  * @typedef {import('mdast-util-from-markdown').Handle} Handle
  * @typedef {import('micromark-util-types').State} State
+ * @typedef {import('micromark-util-types').TokenizeContext} TokenizeContext
  */
 
 const nodeType = "liquidNode";
@@ -17,12 +18,12 @@ const nodeType = "liquidNode";
 function liquidFromMarkdown() {
   return {
     canContainEols: [nodeType],
-    enter: { [nodeType]: enterInlineMath },
-    exit: { [nodeType]: exitInlineMath },
+    enter: { [nodeType]: enter },
+    exit: { [nodeType]: exit },
   };
 
   /** @type {Handle} */
-  function enterInlineMath(token) {
+  function enter(token) {
     this.enter(
       // @ts-expect-error
       { type: nodeType },
@@ -32,11 +33,11 @@ function liquidFromMarkdown() {
   }
 
   /** @type {Handle} */
-  function exitInlineMath(token) {
-    const d = this.resume();
+  function exit(token) {
+    this.resume();
     /** @type {any} */
     const node = this.stack.at(-1);
-    node.value = d;
+    node.value = this.sliceSerialize(token);
     this.exit(token);
   }
 }
@@ -46,15 +47,40 @@ function liquidFromMarkdown() {
  */
 function liquidSyntax() {
   return {
+    flow: {
+      [codes.leftCurlyBrace]: {
+        name: "liquidFlow",
+        tokenize: tokenizeFlow,
+      },
+    },
     text: {
       [codes.leftCurlyBrace]: {
-        name: "liquid",
-        tokenize: liquidTokenize,
+        name: "liquidText",
+        tokenize: tokenizeText,
       },
     },
   };
 
-  function liquidTokenize(effects, ok, nok) {
+  /** @this {TokenizeContext} */
+  function tokenizeFlow(effects, ok, nok) {
+    return tokenize.call(this, effects, ok, nok, "flow");
+  }
+
+  /** @this {TokenizeContext} */
+  function tokenizeText(effects, ok, nok) {
+    return tokenize.call(this, effects, ok, nok, "text");
+  }
+
+  /**
+   * @this {TokenizeContext}
+   * @param mode {"text" | "flow"}
+   */
+  function tokenize(effects, ok, nok, mode) {
+    const isFlow = mode === "flow";
+    const { interrupt, now, parser } = this;
+    /** @type {typeof codes.rightCurlyBrace | typeof codes.percentSign} */
+    let closingCode;
+
     return start;
 
     /** @type {State} */
@@ -66,10 +92,14 @@ function liquidSyntax() {
         switch (code) {
           case codes.percentSign:
           case codes.leftCurlyBrace:
+            closingCode =
+              code === codes.percentSign
+                ? codes.percentSign
+                : codes.rightCurlyBrace;
             effects.consume(code);
-            return inside;
+            return isFlow && interrupt ? ok : inside;
           default:
-            return nok;
+            return nok(code);
         }
       };
     }
@@ -77,17 +107,21 @@ function liquidSyntax() {
     /** @type {State} */
     function inside(code) {
       switch (code) {
-        case codes.percentSign:
-        case codes.rightCurlyBrace:
+        case closingCode:
           effects.consume(code);
-          return mayExit;
+          return mayClose;
         case codes.eof:
-          return nok;
+          return nok(code);
         default:
           if (markdownLineEnding(code)) {
+            effects.exit(types.data);
             effects.enter(types.lineEnding);
             effects.consume(code);
             effects.exit(types.lineEnding);
+            if (isFlow) {
+              return afterLineEnding;
+            }
+            effects.enter(types.data);
             return inside;
           }
           effects.consume(code);
@@ -96,15 +130,61 @@ function liquidSyntax() {
     }
 
     /** @type {State} */
-    function mayExit(code) {
-      if (code !== codes.rightCurlyBrace) {
-        effects.consume(code);
-        return inside;
+    function afterLineEnding(code) {
+      if (parser.lazy[now().line]) {
+        return nok(code);
       }
-      effects.consume(code);
-      effects.exit(types.data);
-      effects.exit(nodeType);
-      return ok;
+
+      if (markdownLineEnding(code)) {
+        effects.enter(types.lineEnding);
+        effects.consume(code);
+        effects.exit(types.lineEnding);
+        return afterLineEnding;
+      }
+
+      effects.enter(types.data);
+      return inside(code);
+    }
+
+    /** @type {State} */
+    function mayClose(code) {
+      if (code === codes.rightCurlyBrace) {
+        effects.consume(code);
+        effects.exit(types.data);
+        effects.exit(nodeType);
+        return isFlow ? afterClose : ok;
+      }
+
+      return inside;
+    }
+
+    /** @type {State} */
+    function afterClose(code) {
+      if (markdownSpace(code)) {
+        effects.enter(types.whitespace);
+        effects.consume(code);
+        return afterWhitespace;
+      }
+
+      return after(code);
+    }
+
+    /** @type {State} */
+    function afterWhitespace(code) {
+      if (markdownSpace(code)) {
+        effects.consume(code);
+        return afterWhitespace;
+      }
+
+      effects.exit(types.whitespace);
+      return after(code);
+    }
+
+    /** @type {State} */
+    function after(code) {
+      return code === codes.eof || markdownLineEnding(code)
+        ? ok(code)
+        : nok(code);
     }
   }
 }

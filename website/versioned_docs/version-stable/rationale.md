@@ -35,10 +35,11 @@ You can disable this conditional behavior with the [`objectWrap`](options.md#obj
 
 **Tip:** If you have a multi-line object that you’d like to join up into a single line:
 
+<!-- prettier-ignore -->
 ```js
 const user = {
   name: "John Doe",
-  age: 30,
+  age: 30
 };
 ```
 
@@ -207,7 +208,7 @@ console.log('Running a background task')
 })()
 ```
 
-If you feed this into Prettier, it will not alter the behavior of this code, instead, it will reformat it in a way that shows how this code will actually behave when ran.
+If you feed this into Prettier, it will not alter the behavior of this code; instead, it will reformat it in a way that shows how this code will actually behave when run.
 
 ```js
 console.log("Running a background task")(async () => {

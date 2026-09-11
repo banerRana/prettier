@@ -37,6 +37,19 @@ function isWideKeywords(value) {
   return wideKeywords.has(value.toLowerCase());
 }
 
+const nthPseudoClasses = new Set([
+  ":nth-child",
+  ":nth-last-child",
+  ":nth-of-type",
+  ":nth-last-of-type",
+]);
+function isNthPseudoClassNode(node) {
+  return (
+    node?.type === "selector-pseudo" &&
+    nthPseudoClasses.has(node.value.toLowerCase())
+  );
+}
+
 function isKeyframeAtRuleKeywords(path, value) {
   const atRuleAncestorNode = path.findAncestor(
     (node) => node.type === "css-atrule",
@@ -261,6 +274,17 @@ function isSCSSMapItemNode(path, options) {
     return false;
   }
 
+  // A parenthesized scalar (i.e. `$key: (value)`) isn't a single-item list.
+  if (
+    node.type === "value-paren_group" &&
+    node.open &&
+    node.close &&
+    node.groups.length === 1 &&
+    node.groups[0].type !== "value-comma_group"
+  ) {
+    return false;
+  }
+
   const parentNode = path.parent;
 
   // Don't treat SCSS if function arguments as maps (`if(sass(condition): value; else: value)`)
@@ -430,6 +454,7 @@ export {
   isMathOperatorNode,
   isMediaAndSupportsKeywords,
   isMultiplicationNode,
+  isNthPseudoClassNode,
   isParenGroupNode,
   isPostcssSimpleVarNode,
   isRelationalOperatorNode,

@@ -63,17 +63,17 @@ A list of parser names.
 
 The tests verify that the parsers in this list produce the same output.
 
-If the list includes `typescript`, then `babel-ts`, and `oxc-ts` are included implicitly.
+If the list includes `typescript`, then `babel-ts`, `oxc-ts`, and `yuku-ts` are included implicitly.
 
 If the list includes `flow`, then `hermes` is included implicitly.
 
-If the list includes `babel`, and the current directory is inside `tests/format/js` or `tests/format/jsx`, then `acorn`, `espree`, `meriyah`, and `oxc` are included implicitly.
+If the list includes `babel`, and the current directory is inside `tests/format/js` or `tests/format/jsx`, then `acorn`, `espree`, `meriyah`, `oxc`, and `yuku` are included implicitly.
 
 ### **`options`**
 
 In addition to Prettier's formatting options, can contain the `errors` property to specify that it's expected that the formatting shouldn't be successful and an error should be thrown for all (`errors: true`) or some combinations of input entries and parsers.
 
-The implementation of `runFormatTest` can be found in [`tests/config/run-format-test.js`](tests/config/run-format-test.js).
+The implementation of `runFormatTest` can be found in [`tests/config/format-test/run-format-test.js`](tests/config/format-test/index.js).
 
 `tests/format/flow/flow-repo/` contains the Flow test suite and is not supposed to be edited by hand. To update it, clone the Flow repo next to the Prettier repo and run: `node scripts/sync-flow-tests.cjs ../flow/tests/`.
 
@@ -91,6 +91,8 @@ Prettier is an opinionated formatter and is not accepting pull requests that add
 ## Pull requests
 
 The project uses ESLint for linting and Prettier for formatting. If your editor isn't set up to work with them, you can lint and format all files from the command line using `yarn fix`.
+
+Please follow the [PR template](.github/PULL_REQUEST_TEMPLATE.md) when opening pull requests, pull requests that do not follow the template may be closed without review.
 
 After opening a PR, describe your changes in a file in the `changelog_unreleased` directory following the template [`changelog_unreleased/TEMPLATE.md`](changelog_unreleased/TEMPLATE.md) and commit this file to your PR. You can use `yarn generate-changelog` to generate a changelog file. Please see comments of the script file for usage.
 

@@ -12,6 +12,7 @@ import {
   softline,
 } from "../../document/index.js";
 import getIndentSize from "../../utilities/get-indent-size.js";
+import { getOrInsertComputed } from "../../utilities/get-or-insert.js";
 import getStringWidth from "../../utilities/get-string-width.js";
 import hasNewlineInRange from "../../utilities/has-newline-in-range.js";
 import { locEnd, locStart } from "../location/index.js";
@@ -130,13 +131,17 @@ function printJestEachTemplateLiteral(path, options, print) {
       ...tableBody.map((row) => row.cells.length),
     );
 
-    const maxColumnWidths = Array.from({ length: maxColumnCount }).fill(0);
+    const maxColumnWidths = Array.from({ length: maxColumnCount }, () => 0);
     const table = [
       { cells: headerNames },
       ...tableBody.filter((row) => row.cells.length > 0),
     ];
-    for (const { cells } of table.filter((row) => !row.hasLineBreak)) {
-      for (const [index, cell] of cells.entries()) {
+    for (const row of table) {
+      if (row.hasLineBreak) {
+        continue;
+      }
+
+      for (const [index, cell] of row.cells.entries()) {
         maxColumnWidths[index] = Math.max(
           maxColumnWidths[index],
           getStringWidth(cell),
@@ -173,28 +178,37 @@ function printJestEachTemplateLiteral(path, options, print) {
 const templateLiteralIndentCache = new WeakMap();
 function getTemplateLiteralExpressionIndent(path, options) {
   const { parent: templateLiteral, index } = path;
-  if (!templateLiteralIndentCache.has(templateLiteral)) {
-    const { tabWidth } = options;
-    let previousQuasiIndentSize = 0;
-    const sizes = templateLiteral.quasis.map((quasi) => {
-      const text = quasi.value.raw;
-      const indentSize = text.includes("\n")
-        ? getIndentSize(text, tabWidth)
-        : previousQuasiIndentSize;
-      previousQuasiIndentSize = indentSize;
-      return { indentSize, previousQuasiText: text };
-    });
-    templateLiteralIndentCache.set(templateLiteral, sizes);
-  }
+  const sizes = getOrInsertComputed(
+    templateLiteralIndentCache,
+    templateLiteral,
+    (templateLiteral) => {
+      const { tabWidth } = options;
+      let previousQuasiIndentSize = 0;
+      const sizes = templateLiteral.quasis.map((quasi) => {
+        const text = quasi.value.raw;
+        const indentSize = text.includes("\n")
+          ? getIndentSize(text, tabWidth)
+          : previousQuasiIndentSize;
+        previousQuasiIndentSize = indentSize;
+        return { indentSize, previousQuasiText: text };
+      });
+      return sizes;
+    },
+  );
 
-  return templateLiteralIndentCache.get(templateLiteral)[index];
+  return sizes[index];
 }
 
 /*
 - `TemplateLiteral`
 - `TSTemplateLiteralType` (TypeScript)
 */
-function printTemplateExpression(path, options, print) {
+function printTemplateExpression(
+  path,
+  options,
+  print,
+  shouldPreserveIndentation = true,
+) {
   const { node, index } = path;
   let expressionDoc = print();
 
@@ -214,6 +228,7 @@ function printTemplateExpression(path, options, print) {
     const renderedExpression = printDocToString(expressionDoc, {
       ...options,
       printWidth: Number.POSITIVE_INFINITY,
+      endOfLine: "lf",
     }).formatted;
 
     // ... unless one will be introduced anyway, e.g. by a nested function.
@@ -238,6 +253,11 @@ function printTemplateExpression(path, options, print) {
       isBinaryish(node))
   ) {
     expressionDoc = [indent([softline, expressionDoc]), softline];
+  }
+
+  // There is no way to know how the quasis will be printed
+  if (!shouldPreserveIndentation) {
+    return group(["${", expressionDoc, lineSuffixBoundary, "}"]);
   }
 
   // For a template literal of the following form:
@@ -271,6 +291,19 @@ function printTemplateExpressions(path, options, print) {
   return path.map(
     () => printTemplateExpression(path, options, print),
     path.node.type === "TSTemplateLiteralType" ? "types" : "expressions",
+  );
+}
+
+function printEmbeddedTemplateExpressions(path, options, print) {
+  return path.map(
+    () =>
+      printTemplateExpression(
+        path,
+        options,
+        print,
+        /* shouldPreserveIndentation */ false,
+      ),
+    "expressions",
   );
 }
 
@@ -322,8 +355,8 @@ function isJestEachTemplateLiteral({ node, parent }) {
 
 export {
   escapeTemplateCharacters,
+  printEmbeddedTemplateExpressions,
   printTaggedTemplateExpression,
-  printTemplateExpressions,
   printTemplateLiteral,
   uncookTemplateElementValue,
 };

@@ -5,7 +5,7 @@ import { printTypeAnnotationProperty } from "./type-annotation.js";
 
 function printIndexSignature(path, options, print) {
   const { node } = path;
-  // The typescript parser accepts multiple parameters here. If you're
+  // The TypeScript parser accepts multiple parameters here. If you're
   // using them, it makes sense to have a trailing comma. But if you
   // aren't, this is more like a computed property name than an array.
   // So we leave off the trailing comma when there's just one parameter.
@@ -21,13 +21,15 @@ function printIndexSignature(path, options, print) {
   const isClassMember = path.key === "body" && path.parent.type === "ClassBody";
 
   return [
-    // `static` only allowed in class member
-    isClassMember && node.static ? "static " : "",
-    node.readonly ? "readonly " : "",
-    "[",
-    node.parameters ? parametersGroup : "",
-    "]",
-    printTypeAnnotationProperty(path, print),
+    group([
+      // `static` only allowed in class member
+      isClassMember && node.static ? "static " : "",
+      node.readonly ? "readonly " : "",
+      "[",
+      node.parameters ? parametersGroup : "",
+      "]",
+      printTypeAnnotationProperty(path, print),
+    ]),
     printClassMemberSemicolon(path, options),
   ];
 }

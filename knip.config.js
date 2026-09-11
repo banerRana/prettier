@@ -33,10 +33,11 @@ const config = {
       ignoreDependencies: [
         "ts-expect",
         "buffer",
-        "deno-path-from-file-url",
         "base64-arraybuffer-es6",
+        "flow-estree",
+        "@yuku-parser/wasm",
       ],
-      ignoreBinaries: ["test-coverage"],
+      ignoreBinaries: [],
     },
     website: {
       entry: [
@@ -44,10 +45,7 @@ const config = {
         "src/pages/**/*.{js,jsx}",
         "static/**/*.{js,mjs}",
       ],
-      ignoreDependencies: [
-        "@docusaurus/faster",
-        "@docusaurus/plugin-content-docs",
-      ],
+      ignoreDependencies: ["@docusaurus/plugin-content-docs"],
     },
     "scripts/tools/bundle-test": {},
     "scripts/tools/eslint-plugin-prettier-internal-rules": {},

@@ -12,12 +12,12 @@ This page explains how to create, publish and consume a shareable config.
 
 ## Creating a Shareable Config
 
-Sharable configs are just [npm packages](https://docs.npmjs.com/about-packages-and-modules#about-packages) that export a single [prettier config file](./configuration.md).
+Shareable configs are just [npm packages](https://docs.npmjs.com/about-packages-and-modules#about-packages) that export a single [prettier config file](./configuration.md).
 
 Before we start, make sure you have:
 
 - An account for [npmjs.com](https://www.npmjs.com/) to publish the package
-- Basic understating about [how to create a Node.js module](https://docs.npmjs.com/creating-node-js-modules)
+- Basic understanding about [how to create a Node.js module](https://docs.npmjs.com/creating-node-js-modules)
 
 First, create a new package. We recommend creating a [scoped package](https://docs.npmjs.com/cli/v10/using-npm/scope) with the name `@username/prettier-config`.
 
@@ -110,6 +110,13 @@ bun add --dev @username/prettier-config
 ```
 
 </TabItem>
+<TabItem value="deno">
+
+```bash
+deno install --dev @username/prettier-config
+```
+
+</TabItem>
 </Tabs>
 
 Then, you can reference it in your `package.json`:
@@ -128,7 +135,7 @@ If you don’t want to use `package.json`, you can use any of the supported exte
 "@company/prettier-config"
 ```
 
-### Extending a Sharable Config
+### Extending a Shareable Config
 
 To _extend_ the configuration to overwrite some properties from the shared configuration, import the file in a `prettier.config.mjs` file and export the modifications, e.g:
 

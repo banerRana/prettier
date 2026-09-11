@@ -5,7 +5,10 @@ import {
   visitAll,
 } from "angular-html-parser";
 import isNonEmptyArray from "../../utilities/is-non-empty-array.js";
-import HTML_ELEMENT_ATTRIBUTES from "../utilities/html-elements-attributes.evaluate.js";
+import {
+  ELEMENT_ATTRIBUTES,
+  GLOBAL_ATTRIBUTES,
+} from "../utilities/html-elements-attributes.evaluate.js";
 import HTML_TAGS from "../utilities/html-tags.evaluate.js";
 import isUnknownNamespace from "../utilities/is-unknown-namespace.js";
 import { Node } from "./ast.js";
@@ -36,6 +39,8 @@ class Visitor extends RecursiveVisitor {
 }
 
 function postprocess(rawAst, frontMatter, parseOptions, parseSubHtml) {
+  const isAngular = parseOptions.name === "angular";
+
   visitAll(new Visitor(), rawAst.children, { parseOptions });
 
   if (frontMatter) {
@@ -53,11 +58,16 @@ function postprocess(rawAst, frontMatter, parseOptions, parseSubHtml) {
       if (ieConditionalComment) {
         node.parent.replaceChild(node, ieConditionalComment);
       }
+    } else if (isAngular && node.kind === "element" && node.comments) {
+      node.startTagComments = node.comments;
+      delete node.comments;
     }
 
-    normalizeAngularControlFlowBlock(node);
-    normalizeAngularLetDeclaration(node);
-    normalizeAngularIcuExpression(node);
+    if (isAngular) {
+      normalizeAngularControlFlowBlock(node);
+      normalizeAngularLetDeclaration(node);
+      normalizeAngularIcuExpression(node);
+    }
   });
 
   return ast;
@@ -128,7 +138,7 @@ function lowerCaseIf(text, fn) {
  */
 function restoreName(node) {
   const namespace = node.name.startsWith(":")
-    ? node.name.slice(1).split(":")[0]
+    ? node.name.slice(1).split(":", 1)[0]
     : null;
   const rawName = node.nameSpan.toString();
   const hasExplicitNamespace =
@@ -231,9 +241,9 @@ function normalizeName(node, parseOptions) {
           attr.name = lowerCaseIf(
             attr.name,
             (lowerCasedAttrName) =>
-              HTML_ELEMENT_ATTRIBUTES.has(node.name) &&
-              (HTML_ELEMENT_ATTRIBUTES.get("*").has(lowerCasedAttrName) ||
-                HTML_ELEMENT_ATTRIBUTES.get(node.name).has(lowerCasedAttrName)),
+              HTML_TAGS.has(node.name) &&
+              (GLOBAL_ATTRIBUTES.has(lowerCasedAttrName) ||
+                ELEMENT_ATTRIBUTES.get(node.name)?.has(lowerCasedAttrName)),
           );
         }
       }

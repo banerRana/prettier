@@ -35,6 +35,22 @@ describe("throw error with invalid config target (directory)", () => {
     "folder/.prettierrc", // this is a directory
   ]).test({
     status: "non-zero",
+    stderr:
+      /*
+      On Node.js<26
+
+      ```
+      EISDIR: illegal operation on a directory, read
+      ```
+
+      On Node.js>=26
+      ```
+      EISDIR: illegal operation on a directory, read '<cli>/config/invalid/folder/.prettierrc'
+      ```
+      */
+      expect.stringContaining("EISDIR: illegal operation on a directory, read"),
+    stdout: "",
+    write: [],
   });
 });
 
@@ -142,7 +158,7 @@ describe("Invalid toml file", () => {
     write: [],
     stderr: expect.stringContaining(
       outdent`
-        Invalid TOML document: incomplete key-value declaration: no value specified
+        Invalid TOML document: incomplete declaration: value expected
 
         1:  a=
               ^
@@ -168,7 +184,10 @@ describe("Invalid yaml file", () => {
     stderr: expect.stringContaining(
       // Keep the outdent, since error message changes between versions
       outdent`
-        Map keys must be unique; "a" is repeated
+        Map keys must be unique at line 1, column 3:
+
+        a:
+          ^
       `
         .split("\n")
         .map((line) => `[error] ${line}`)

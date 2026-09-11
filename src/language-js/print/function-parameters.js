@@ -23,6 +23,7 @@ import {
   isArrayExpression,
   isObjectExpression,
   isObjectType,
+  isTypeAnnotation,
 } from "../utilities/node-types.js";
 import { isTestCall } from "../utilities/test-libraries.js";
 import {
@@ -185,7 +186,11 @@ function printFunctionParameters(
     typeParametersDoc,
     "(",
     indent([softline, ...printed]),
-    !hasRestParameter(functionNode) ? printTrailingComma(options, "all") : "",
+    !hasRestParameter(functionNode) &&
+    // Angular does not allow trailing comma
+    path.root.type !== "NGRoot"
+      ? printTrailingComma(options, "all")
+      : "",
     softline,
     ")",
   ];
@@ -205,9 +210,7 @@ function shouldHugTheOnlyFunctionParameter(node) {
     (parameter.type === "ObjectPattern" ||
       parameter.type === "ArrayPattern" ||
       (parameter.type === "Identifier" &&
-        parameter.typeAnnotation &&
-        (parameter.typeAnnotation.type === "TypeAnnotation" ||
-          parameter.typeAnnotation.type === "TSTypeAnnotation") &&
+        isTypeAnnotation(parameter.typeAnnotation) &&
         isObjectType(parameter.typeAnnotation.typeAnnotation)) ||
       (parameter.type === "FunctionTypeParam" &&
         isObjectType(parameter.typeAnnotation) &&

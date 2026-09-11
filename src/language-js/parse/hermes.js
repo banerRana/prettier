@@ -12,7 +12,7 @@ function createParseError(error) {
   }
 
   const { line, column } = loc;
-  let [message] = error.message.split("\n");
+  let [message] = error.message.split("\n", 1);
 
   const suffix = ` (${line}:${column})`;
   if (message.endsWith(suffix)) {
@@ -21,7 +21,7 @@ function createParseError(error) {
 
   return createError(message, {
     loc: {
-      start: { line, column },
+      start: { line, column: column + 1 },
     },
     cause: error,
   });

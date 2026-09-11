@@ -96,127 +96,6 @@ foo<a>
 ================================================================================
 `;
 
-exports[`15707.ts format 1`] = `
-====================================options=====================================
-parsers: ["typescript"]
-                                                      printWidth: 80 (default) |
-=====================================input======================================
-const {
-  foo,
-  // bar
-  // baz
-}: Foo = expr;
-
-const {
-  foo1,
-  // bar
-  foo2,
-  // baz
-}: Foo = expr;
-
-const [
-  foo,
-  // bar
-  // baz
-]: Foo = expr;
-
-const [
-  foo1,
-  // bar
-  foo2,
-  // baz
-]: Foo = expr;
-
-function method({
-  foo,
-  // bar = "bar",
-  // bazz = "bazz",
-}: Foo) {}
-
-function method({
-  foo1,
-  // bar = "bar",
-  foo2
-  // bazz = "bazz",
-}: Foo) {}
-
-function method([
-  foo,
-  // bar = "bar",
-  foo2
-  // bazz = "bazz",
-]: Foo) {}
-
-const {
-  // bar
-  // baz
-}: Foo = expr;
-
-const [
-  // bar
-  // baz
-]: Foo = expr;
-
-=====================================output=====================================
-const {
-  foo,
-  // bar
-  // baz
-}: Foo = expr;
-
-const {
-  foo1,
-  // bar
-  foo2,
-  // baz
-}: Foo = expr;
-
-const [
-  foo,
-  // bar
-  // baz
-]: Foo = expr;
-
-const [
-  foo1,
-  // bar
-  foo2,
-  // baz
-]: Foo = expr;
-
-function method({
-  foo,
-  // bar = "bar",
-  // bazz = "bazz",
-}: Foo) {}
-
-function method({
-  foo1,
-  // bar = "bar",
-  foo2,
-  // bazz = "bazz",
-}: Foo) {}
-
-function method([
-  foo,
-  // bar = "bar",
-  foo2,
-  // bazz = "bazz",
-]: Foo) {}
-
-const {
-  // bar
-  // baz
-}: Foo = expr;
-
-const [
-  // bar
-  // baz
-]: Foo = expr;
-
-================================================================================
-`;
-
 exports[`16065.ts format 1`] = `
 ====================================options=====================================
 parsers: ["typescript"]
@@ -564,7 +443,7 @@ class A {
 ================================================================================
 `;
 
-exports[`abstract_class.ts format 1`] = `
+exports[`abstract-class.ts format 1`] = `
 ====================================options=====================================
 parsers: ["typescript"]
                                                       printWidth: 80 (default) |
@@ -591,7 +470,7 @@ abstract class AbstractRule {
 ================================================================================
 `;
 
-exports[`abstract_methods.ts format 1`] = `
+exports[`abstract-methods.ts format 1`] = `
 ====================================options=====================================
 parsers: ["typescript"]
                                                       printWidth: 80 (default) |
@@ -624,63 +503,85 @@ abstract class AbstractFoo {
 ================================================================================
 `;
 
-exports[`after_jsx_generic.tsx format 1`] = `
+exports[`abstract-methods-2.ts format 1`] = `
 ====================================options=====================================
 parsers: ["typescript"]
                                                       printWidth: 80 (default) |
 =====================================input======================================
-let comp = (
-  <>
-    <Component<number> /* comment1 */></Component>
-    <Component<number> foo /* comment2 */></Component>
-    <Component<number> /* comment3 */ bar></Component>
-    <Component<number> foo /* comment4 */ bar></Component>
+// #18478
 
-    <Component<number>
-      // comment5
-    ></Component>
-    <Component<number>
-      foo
-      // comment6
-    ></Component>
-    <Component<number>
-      // comment7
-      foo
-    ></Component>
-    <Component<number>
-      foo
-      // comment8
-      bar
-    ></Component>
-  </>
-);
+abstract class AbstractBar {
+  abstract method4(
+    param1: number,
+    // trailing line comment
+  ): void;
+  abstract method5(
+    param1: number,
+    /* trailing block comment */
+  ): void;
+  abstract method6(
+    ...rest: number[]
+    // trailing after rest
+  ): void;
+  abstract method7(
+    { a }: { a: number },
+    // trailing after object pattern
+  ): void;
+}
+
+declare class DeclareCls {
+  method(
+    param1: number,
+    // trailing line after last param
+  ): void;
+}
+
+class Overload {
+  method(
+    param1: number,
+    // trailing line on first overload
+  ): void;
+  method(param1: string): void;
+  method(param1: number | string): void {}
+}
 
 =====================================output=====================================
-let comp = (
-  <>
-    <Component<number> /* comment1 */></Component>
-    <Component<number> foo /* comment2 */></Component>
-    <Component<number> /* comment3 */ bar></Component>
-    <Component<number> foo /* comment4 */ bar></Component>
+// #18478
 
-    <Component<number>
-    // comment5
-    ></Component>
-    <Component<number>
-      foo
-      // comment6
-    ></Component>
-    <Component<number>
-      // comment7
-      foo
-    ></Component>
-    <Component<number>
-      foo
-      // comment8
-      bar
-    ></Component>
-  </>
-);
+abstract class AbstractBar {
+  abstract method4(
+    param1: number,
+    // trailing line comment
+  ): void;
+  abstract method5(
+    param1: number,
+    /* trailing block comment */
+  ): void;
+  abstract method6(
+    ...rest: number[]
+    // trailing after rest
+  ): void;
+  abstract method7(
+    { a }: { a: number },
+    // trailing after object pattern
+  ): void;
+}
+
+declare class DeclareCls {
+  method(
+    param1: number,
+    // trailing line after last param
+  ): void;
+}
+
+class Overload {
+  method(
+    param1: number,
+    // trailing line on first overload
+  ): void;
+  method(param1: string): void;
+  method(param1: number | string): void {}
+}
 
 ================================================================================
 `;
@@ -847,27 +748,6 @@ export type AsyncExecuteOptions = child_process$execFileOpts & {
   stdin?: string;
   dontLogInNuclide?: boolean;
 };
-
-================================================================================
-`;
-
-exports[`jsx.tsx format 1`] = `
-====================================options=====================================
-parsers: ["typescript"]
-                                                      printWidth: 80 (default) |
-=====================================input======================================
-var example1 = <div>
-	https://test
-</div>;
-
-var example2 = <div>
-	/*test*/
-</div>;
-
-=====================================output=====================================
-var example1 = <div>https://test</div>;
-
-var example2 = <div>/*test*/</div>;
 
 ================================================================================
 `;
@@ -1353,7 +1233,7 @@ class A {
 ================================================================================
 `;
 
-exports[`type_literals.ts format 1`] = `
+exports[`type-literals.ts format 1`] = `
 ====================================options=====================================
 parsers: ["typescript"]
                                                       printWidth: 80 (default) |
@@ -1421,23 +1301,6 @@ interface Foo {
     arg,
   ): any;
 }
-
-================================================================================
-`;
-
-exports[`types.ts format 1`] = `
-====================================options=====================================
-parsers: ["typescript"]
-                                                      printWidth: 80 (default) |
-=====================================input======================================
-(() => {
-  // swallow error and fallback to using directory as path
-}) as string[];
-
-=====================================output=====================================
-(() => {
-  // swallow error and fallback to using directory as path
-}) as string[];
 
 ================================================================================
 `;

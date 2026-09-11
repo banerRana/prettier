@@ -1,6 +1,6 @@
 import { hardline, markAsRoot, replaceEndOfLine } from "../document/index.js";
-import getMaxContinuousCount from "../utilities/get-max-continuous-count.js";
 import inferParser from "../utilities/infer-parser.js";
+import { printCodeFences } from "./print/code.js";
 import { getFencedCodeBlockValue } from "./utilities.js";
 
 function embed(path, options) {
@@ -8,8 +8,8 @@ function embed(path, options) {
 
   switch (node.type) {
     case "code": {
-      const { lang: language } = node;
-      if (!language) {
+      const { isIndented, lang: language } = node;
+      if (isIndented || !language) {
         return;
       }
 
@@ -47,10 +47,7 @@ function embed(path, options) {
           textToDocOptions,
         );
 
-        const styleUnit = options.__inJsTemplate ? "~" : "`";
-        const style = styleUnit.repeat(
-          Math.max(3, getMaxContinuousCount(node.value, styleUnit) + 1),
-        );
+        const style = printCodeFences(doc, options);
 
         return markAsRoot([
           style,
@@ -91,11 +88,13 @@ function validateImportExport(ast, type) {
 
   // https://github.com/mdx-js/mdx/blob/3430138958c9c0344ecad9d59e0d6b5d72bedae3/packages/remark-mdx/extract-imports-and-exports.js#L16
   if (
-    !body.every(
+    body.some(
       (node) =>
-        node.type === "ImportDeclaration" ||
-        node.type === "ExportDefaultDeclaration" ||
-        node.type === "ExportNamedDeclaration",
+        !(
+          node.type === "ImportDeclaration" ||
+          node.type === "ExportDefaultDeclaration" ||
+          node.type === "ExportNamedDeclaration"
+        ),
     )
   ) {
     throw new Error(`Unexpected '${type}' in MDX.`);

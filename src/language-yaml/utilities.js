@@ -182,7 +182,7 @@ function getFlowScalarLineContents(nodeType, content, options) {
       words.length > 0 &&
       !(
         // trailing backslash in quoteDouble should be preserved
-        (nodeType === "quoteDouble" && lines.at(-1).at(-1).endsWith("\\"))
+        nodeType === "quoteDouble" && lines.at(-1).at(-1).endsWith("\\")
       )
     ) {
       lines[lines.length - 1] = [...lines.at(-1), ...words];
@@ -286,7 +286,7 @@ function getBlockValueLineContents(
 
     let trailingNewlineCount = 0;
     for (let i = lineContents.length - 1; i >= 0; i--) {
-      if (lineContents[i].every((line) => line.replace(/[ \t]+$/, "") === "")) {
+      if (lineContents[i].length === 0) {
         trailingNewlineCount++;
       } else {
         break;
@@ -300,6 +300,10 @@ function getBlockValueLineContents(
           lineContents.slice(0, -(trailingNewlineCount - 1))
         : lineContents.slice(0, -trailingNewlineCount);
   }
+}
+
+function hasTrailingContentWhitespace(node) {
+  return /[ \t]+\n*$/.test(node.value);
 }
 
 function isInlineNode(node) {
@@ -332,6 +336,7 @@ export {
   hasMiddleComments,
   hasPrettierIgnore,
   hasTrailingComment,
+  hasTrailingContentWhitespace,
   isEmptyNode,
   isInlineNode,
   isLastDescendantNode,
